@@ -35,7 +35,7 @@ func main() {
 	}
 	repoUrl.Path = path.Join("repos", *owner, *repoName)
 
-	request, err := http.NewRequest("GET", repoUrl.String(), nil)
+	request, err := http.NewRequest(http.MethodGet, repoUrl.String(), nil)
 	if err != nil {
 		fmt.Println("Ошибка формирования запроса:", err)
 		return
