@@ -1,9 +1,8 @@
-FROM golang:1.22-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
 COPY collector/go.mod collector/go.sum ./collector/
-COPY pb/ ./pb/
 
 WORKDIR /app/collector
 
