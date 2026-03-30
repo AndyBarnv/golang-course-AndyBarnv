@@ -1,9 +1,9 @@
-package grpc_client
+package grpc
 
 import (
 	"context"
 	"gateway/internal/domain"
-	"inforepo_microservice_system/proto/pb"
+	"gateway/pb"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

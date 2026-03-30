@@ -2,9 +2,11 @@ package http
 
 import (
 	"gateway/internal/usecase"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
@@ -33,7 +35,21 @@ func (h *Handler) GetRepoInfo(c *gin.Context) {
 
 	repoInfo, err := h.usecase.FetchRepository(c.Request.Context(), owner, repo)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		log.Printf("Ошибка при вызове Collector: %v", err)
+
+		st, ok := status.FromError(err)
+		if ok {
+			switch st.Code() {
+			case 404:
+				c.JSON(http.StatusNotFound, gin.H{"error": st.Message()})
+				return
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+				return
+			}
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
