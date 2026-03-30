@@ -2,8 +2,8 @@ package grpc
 
 import (
 	"collector/internal/usecase"
+	"collector/pb"
 	"context"
-	"inforepo_microservice_system/proto/pb"
 	"time"
 
 	"google.golang.org/grpc/codes"

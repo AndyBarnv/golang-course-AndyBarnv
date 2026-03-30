@@ -2,10 +2,10 @@ package main
 
 import (
 	"collector/internal/adapter/github"
-	"collector/internal/delivery/grpc"
+	grpchandler "collector/internal/delivery/grpc"
 	"collector/internal/usecase"
+	pb "collector/pb"
 	"fmt"
-	pb "inforepo_microservice_system/proto/pb"
 	"log"
 	"net"
 
@@ -15,7 +15,7 @@ import (
 func main() {
 	githubAdapter := github.NewAdapter()
 	service := usecase.NewService(githubAdapter)
-	grpcHandler := grpc.NewHandler(service)
+	grpcHandler := grpchandler.NewHandler(service)
 
 	listener, err := net.Listen("tcp", ":50051")
 	if err != nil {
@@ -25,7 +25,7 @@ func main() {
 	server := grpc.NewServer()
 	pb.RegisterCollectorServiceServer(server, grpcHandler)
 
-	fmt.Println("Collector Service listening on port 50051") // Потом убраттть
+	fmt.Println("Collector Service listening on port 50051")
 	if err := server.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
