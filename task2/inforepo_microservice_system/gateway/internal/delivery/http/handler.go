@@ -53,5 +53,13 @@ func (h *Handler) GetRepoInfo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, repoInfo)
+	repoDTO := RepositoryResponse{
+		Name:        repoInfo.Name,
+		Description: repoInfo.Description,
+		Stars:       repoInfo.Stars,
+		Forks:       repoInfo.Forks,
+		CreatedAt:   repoInfo.CreatedAt,
+	}
+
+	c.JSON(http.StatusOK, repoDTO)
 }

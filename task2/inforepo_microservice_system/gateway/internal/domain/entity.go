@@ -1,9 +1,9 @@
 package domain
 
 type Repository struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Stars       int    `json:"stars"`
-	Forks       int    `json:"forks"`
-	CreatedAt   string `json:"created_at"`
+	Name        string
+	Description string
+	Stars       int
+	Forks       int
+	CreatedAt   string
 }
