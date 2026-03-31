@@ -16,6 +16,14 @@ type Adapter struct {
 	client *http.Client
 }
 
+var githubResp struct {
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Stargazers  int       `json:"stargazers_count"`
+	Forks       int       `json:"forks_count"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 func NewAdapter() *Adapter {
 	return &Adapter{
 		client: &http.Client{Timeout: 10 * time.Second},
@@ -43,14 +51,6 @@ func (a *Adapter) FetchRepo(ctx context.Context, owner, repo string) (*domain.Re
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("github api error: status %d", resp.StatusCode)
-	}
-
-	var githubResp struct {
-		Name        string    `json:"name"`
-		Description string    `json:"description"`
-		Stargazers  int       `json:"stargazers_count"`
-		Forks       int       `json:"forks_count"`
-		CreatedAt   time.Time `json:"created_at"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&githubResp); err != nil {
