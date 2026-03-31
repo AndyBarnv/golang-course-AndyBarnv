@@ -1,0 +1,23 @@
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /app
+
+COPY collector/go.mod collector/go.sum ./collector/
+
+WORKDIR /app/collector
+
+RUN go mod download
+
+COPY collector/ .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o /collector-server ./cmd
+
+FROM alpine:latest
+
+WORKDIR /root/
+
+COPY --from=builder /collector-server .
+
+EXPOSE 50051
+
+CMD ["./collector-server"]

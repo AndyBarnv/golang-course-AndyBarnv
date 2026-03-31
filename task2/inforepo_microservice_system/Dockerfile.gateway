@@ -1,0 +1,28 @@
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /app
+
+RUN go install github.com/swaggo/swag/cmd/swag@v1.8.12
+
+COPY gateway/go.mod gateway/go.sum ./gateway/
+
+WORKDIR /app/gateway
+
+RUN go mod download
+
+COPY gateway/ .
+
+RUN /go/bin/swag init -g cmd/main.go -o docs
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o /gateway-server ./cmd
+
+FROM alpine:latest
+
+WORKDIR /root/
+
+COPY --from=builder /gateway-server .
+COPY --from=builder /app/gateway/docs ./docs
+
+EXPOSE 8080
+
+CMD ["./gateway-server"]
