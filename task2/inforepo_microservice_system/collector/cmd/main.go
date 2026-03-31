@@ -5,7 +5,6 @@ import (
 	grpchandler "collector/internal/delivery/grpc"
 	"collector/internal/usecase"
 	pb "collector/pb"
-	"fmt"
 	"log"
 	"net"
 
@@ -25,7 +24,7 @@ func main() {
 	server := grpc.NewServer()
 	pb.RegisterCollectorServiceServer(server, grpcHandler)
 
-	fmt.Println("Collector Service listening on port 50051")
+	log.Println("Collector Service listening on port 50051")
 	if err := server.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
