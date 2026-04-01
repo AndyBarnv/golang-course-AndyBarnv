@@ -8,6 +8,7 @@ service ProcessorService {
 }
 
 message PingRequest {}
+
 message PingResponse {}
 
 message RepositoryRequest {
