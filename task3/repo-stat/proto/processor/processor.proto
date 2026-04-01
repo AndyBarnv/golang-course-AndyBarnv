@@ -3,13 +3,15 @@ package processor;
 option go_package = "repo-stat/proto/processor";
 
 service ProcessorService {
-  rpc GetRepositoryInfo (RepositoryRequest) returns (RepositoryResponse);
-  rpc Ping (PingRequest) returns (PingResponse);
+  rpc GetRepositoryInfo(RepositoryRequest) returns (RepositoryResponse);
+  rpc Ping(PingRequest) returns (PingResponse);
 }
 
-message PingRequest {}
+message PingRequest {
+}
 
-message PingResponse {}
+message PingResponse {
+}
 
 message RepositoryRequest {
   string owner = 1;
