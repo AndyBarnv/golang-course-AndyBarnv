@@ -1,126 +1,119 @@
-# Домашнее задание №3
-Как домашнее задание №2, только лучше
+# Repo-Stat: Distributed GitHub Repository Analyzer
+Микросервисная система для получения информации о репозиториях GitHub. Проект реализован на Go с соблюдением принципов Чистой архитектуры (Clean Architecture) и использует gRPC для внутрисетевого взаимодействия.
 
 ---
 
-## Задача
+## Архитектура
 
-Продолжаем развивать наше приложение из второго задания. В рамках этой задачи предстоит реализовать "скелет" будущего полноценного микросервисного приложения, а именно, разделить сервис Collector на Collector и Processor. Ну и не забыть про API Gateway
+Система разделена на 4 независимых сервиса, развернутых в едином Docker-окружении (монорепозиторий). 
 
-Все сервисы должны быть реализованы с соблюдением принципов Чистой архитектуры (Clean Architecture).
+ 
+Описание сервисов: 
 
-В итоге должно получиться 4 сервиса:
+1. API Gateway — точка входа. Принимает REST-запросы, парсит URL, вызывает Processor/Subscriber по gRPC, отдает JSON. Интегрирован Swagger UI.
 
-1. Сервис API Gateway
-- Является REST-сервером и одновременно gRPC-клиентом.
-- Принимает внешние HTTP-запросы.
-- Пробрасывает запрос в сервис Processor через gRPC.
-- Предоставляет спецификацию Swagger (OpenAPI) для тестирования запросов и веб интерфейса.
+2. Processor — сервис-посредник. Принимает запрос от Gateway и прозрачно пробрасывает его в Collector.
 
-2. Сервис Processor
-- Является gRPC-сервером и gRPC-клиентом.
-- Некоторый посредник между API Gateway и Collector. В будущем он будет накапливать всю полученную информацию о репозиториях и отдавать ее в API Gateway по запросу.
-- На данный момент, просто передает запрос от API Gateway в Collector и возвращает результат обратно, без какой-либо дополнительной логики.
+3. Collector — рабочий сервис. Инкапсулирует логику запросов к GitHub REST API, маппит данные в общие protobuf-структуры.
 
-3. Сервис Collector
-- Является gRPC-сервером и REST-клиентом.
-- Инкапсулирует логику работы с GitHub API (используя наработки из ДЗ №1).
-- Принимает запрос от Processor с данными репозитория (owner/repo) и возвращает информацию о нем.
+4. Subscriber — фиктивный сервис, предоставленный для проверки механизмов Health Check (Ping/Pong).
 
-4. Сервис Subscriber
-- Он вам дан для примера, с ним **ничего делать не нужно**.
-
+Технический стек 
+    Язык: Go 1.25
+    Взаимодействие: gRPC & Protocol Buffers (protobuf)
+    Веб-сервер: Стандартная библиотека net/http (Go 1.22+ ServeMux) без использования сторонних фреймворков (gin, echo и т.д.)
+    Документация: Swagger / OpenAPI (через http-swagger)
+    Инфраструктура: Docker, Docker Compose
+    Паттерн: Clean Architecture (Слои: Domain, UseCase, Controller, Adapter)
+     
 ---
 
-## Необходимая функциональность
+## Структура проекта (Монорепозиторий) 
 
-Необходимо реализовать 2 endpoint'a.
-- `GET /api/ping` --- отправить ping запрос из API Gateway в сервисы Processor и Subscriber и получить от них ответ. Выдать пользователю `200 OK` и JSON с информацией о статусе сервисов в формате:
+Проект использует единую зависимость (go.mod в корне repo-stat/). Общий код вынесен в папку platform.
+
+```text
+repo-stat/
+├── platform/         # Общая инфраструктура (httpserver, grpcserver, logger, env)
+├── proto/            # .proto контракты и сгенерированные pb.go файлы
+├── api/              # Сервис API Gateway
+├── processor/        # Сервис Processor
+├── collector/        # Сервис Collector
+├── subscriber/       # Сервис Subscriber
+├── go.mod            # Общий модуль
+└── go.sum
 ```
+ 
+ ---
+ 
+## Запуск системы 
+
+Для запуска необходим Docker и Docker Compose. 
+
+ 
+    Соберите и запустите контейнеры: 
+
+```bash
+docker compose up --build
+```
+
+---
+
+## API Документация (Swagger) 
+
+После запуска системы Swagger UI доступен по адресу:
+    http://localhost:28080/swagger/index.html
+
+Доступные эндпоинты:
+
+1. Проверка здоровья (Health Check) 
+
+Возвращает статус внутренних микросервисов. 
+
+    Endpoint: GET /api/ping
+    Success (200):
+     
+```json
 {
   "status": "ok",
   "services": [
-    {
-      "name": "processor",
-      "status": "up"
-    },
-    {
-      "name": "subscriber",
-      "status": "up"
-    }
+    { "name": "processor", "status": "up" },
+    { "name": "subscriber", "status": "up" }
   ]
 }
-```
-Или `503 Service Unavailable`, если хотя бы один из сервисов недоступен
-```
+``` 
+    Degraded (503): Если хотя бы один сервис недоступен, статус меняется на "degraded", а статус сервиса на "down".
+
+2. Информация о репозитории 
+
+Принимает полный URL репозитория GitHub и возвращает базовую информацию. 
+
+    Endpoint: GET /api/repositories/info?url=<github_url>
+    Пример запроса: 
+    GET /api/repositories/info?url=https://github.com/golang/go
+    Success (200):
+
+```json
 {
-  "status": "degraded",
-  "services": [
-    {
-      "name": "processor",
-      "status": "down"
-    },
-    {
-      "name": "subscriber",
-      "status": "up"
-    }
-  ]
-}
-```
-- `GET /api/repositories/info?url=<github_repo_url>` --- получить базовую информацию о репозитории.
-
-Пример запроса
-```
-GET /api/repositories/info?url=https://github.com/golang/go
-
-Ответ
-
-{
-  "full_name": "golang/go",`
+  "full_name": "golang/go",
   "description": "The Go programming language",
-  "stars": 123456,
-  "forks": 12345,
-  "created_at": "2009-11-10T23:00:00Z",
+  "stars": 125000,
+  "forks": 18000,
+  "created_at": "2009-11-10T23:00:00Z"
 }
 ```
+    Errors:
+        400 Bad Request — URL не передан или имеет неверный формат.
+        404 Not Found — Репозиторий не существует на GitHub.
+        500 Internal Server Error — Ошибка на стороне Collector или GitHub API.
+         
+---     
 
----
+## Запуск тестов 
 
-## Требования
+Интеграционные тесты находятся в папке tests/ и обращаются к API Gateway как внешний клиент. 
 
-- Взаимодействие: Строго gRPC между сервисами.
-- Архитектура: Разделение на слои (Use Cases, Domain, Controller, Adapter) в каждом сервисе.
-- Swagger: Автоматическая или ручная генерация документации, доступная по эндпоинту (например, /swagger/index.html).
-- Обработка ошибок:
-    - Корректные статус-коды gRPC.
-    - Маппинг ошибок gRPC в соответствующие HTTP-коды на уровне Gateway (например, 404 если репозиторий не найден).
-- Наличие dockerfile для всех сервисов и соответствующие изменения в compose.yaml.
-
----
-
-## Формат сдачи задания
-
-Необходимо добавить ревьюеров (если ранее не были добавлены) в collaborators репозитория: Settings -> Collaborators -> Add people
-Ревьюеры:
-- https://github.com/suvorovrain
-- https://github.com/Dabzelos
-- https://github.com/vacmannnn
-
-Работу над заданием необходимо вести в отдельной ветке.
-
-Вы должны использовать предоставленный шаблон. Вы можете спокойно менять написанную логику, если считаете нужным. Однако не должно быть изменений в тестах.
-
-В конце работы необходимо открыть PR из вашей ветки в main **вашего** форка и отметить ревьюеров в разделе Reviewers.
-
-Задание засчитывается, если в CI проходят тесты.
-
----
-
-### Полезные материалы
-
-- [Чистая архитектура в Go (статья)](https://pavel-v-p.medium.com/clean-architecture-in-go-2708304217f2)
-- [Документация gRPC для Go](https://grpc.io/docs/languages/go/basics/)
-- [Библиотека Swag для генерации Swagger](https://github.com/swaggo/swag)
-- [Примеры чистой архитектуры](https://github.com/golang-school/evolution/tree/main/6-layers-ddd)
-- [Про Dockerfile](https://docs.docker.com/build/concepts/dockerfile)
-- [Про Docker compose](https://docs.docker.com/compose/gettingstarted)
+Выполните команду из корня task3: 
+```bash
+cd tests && go test -v
+```
