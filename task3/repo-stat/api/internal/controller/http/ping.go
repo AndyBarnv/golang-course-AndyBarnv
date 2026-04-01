@@ -10,6 +10,14 @@ import (
 	"sync"
 )
 
+// @Summary      Check services health
+// @Description  Pings Processor and Subscriber services
+// @Tags         health
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  dto.PingResponse
+// @Failure      503  {object}  dto.PingResponse
+// @Router       /api/ping [get]
 func NewPingHandler(log *slog.Logger, subClient *subscriber.Client, procClient *processor.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var wg sync.WaitGroup

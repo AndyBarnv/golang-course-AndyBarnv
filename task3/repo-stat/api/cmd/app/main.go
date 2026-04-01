@@ -1,3 +1,10 @@
+// @title           GitHub Repository API
+// @version         1.0
+// @description     A microservice API to fetch GitHub repository info.
+// @host            localhost:28080
+// @BasePath        /
+// @schemes         http
+
 package main
 
 import (
@@ -7,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"repo-stat/api/config"
+	_ "repo-stat/api/docs"
 	"repo-stat/api/internal/controller/http"
 	"repo-stat/platform/httpserver"
 	"repo-stat/platform/logger"
