@@ -4,23 +4,50 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"repo-stat/api/internal/adapter/processor"
+	"repo-stat/api/internal/adapter/subscriber"
 	"repo-stat/api/internal/dto"
-	"repo-stat/api/internal/usecase"
+	"sync"
 )
 
-func NewPingHandler(log *slog.Logger, ping *usecase.Ping) http.HandlerFunc {
+func NewPingHandler(log *slog.Logger, subClient *subscriber.Client, procClient *processor.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		status := ping.Execute(r.Context())
+		var wg sync.WaitGroup
+		var procStatus, subStatus string = "up", "up"
 
-		response := dto.PingResponse{
-			Reply: string(status),
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+			if err := procClient.Ping(r.Context()); err != nil {
+				procStatus = "down"
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			if subClient.Ping(r.Context()) != "up" {
+				subStatus = "down"
+			}
+		}()
+
+		wg.Wait()
+
+		code := http.StatusOK
+		statusStr := "ok"
+		if procStatus == "down" || subStatus == "down" {
+			code = http.StatusServiceUnavailable
+			statusStr = "degraded"
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			log.Error("failed to write ping response", "error", err)
-		}
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(dto.PingResponse{
+			Status: statusStr,
+			Services: []dto.PingService{
+				{Name: "processor", Status: procStatus},
+				{Name: "subscriber", Status: subStatus},
+			},
+		})
 	}
 }
