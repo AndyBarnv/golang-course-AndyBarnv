@@ -49,23 +49,29 @@ func NewRepoInfoHandler(log *slog.Logger, procClient *processor.Client) http.Han
 			if ok && st.Code() == codes.NotFound {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusNotFound)
-				json.NewEncoder(w).Encode(dto.ErrorResponse{Error: st.Message()})
+				if err := json.NewEncoder(w).Encode(dto.ErrorResponse{Error: st.Message()}); err != nil {
+					slog.Error("Failed to encode error response", "error", err)
+				}
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(dto.ErrorResponse{Error: "internal server error"})
+			if err := json.NewEncoder(w).Encode(dto.ErrorResponse{Error: "internal server error"}); err != nil {
+				slog.Error("Failed to encode error response", "error", err)
+			}
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(dto.RepositoryInfoResponse{
+		if err := json.NewEncoder(w).Encode(dto.RepositoryInfoResponse{
 			FullName:    resp.FullName,
 			Description: resp.Description,
 			Stars:       resp.Stars,
 			Forks:       resp.Forks,
 			CreatedAt:   resp.CreatedAt,
-		})
+		}); err != nil {
+			slog.Error("Failed to encode error response", "error", err)
+		}
 	}
 }
