@@ -31,7 +31,7 @@ func (c *Client) GetRepo(ctx context.Context, owner, repo string) (*domain.Repos
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("repository not found")

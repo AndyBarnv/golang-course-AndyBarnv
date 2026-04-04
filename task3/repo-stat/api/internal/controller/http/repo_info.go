@@ -30,7 +30,7 @@ func NewRepoInfoHandler(log *slog.Logger, procClient *processor.Client) http.Han
 		if rawURL == "" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(dto.ErrorResponse{Error: "url query parameter is required"})
+			_ = json.NewEncoder(w).Encode(dto.ErrorResponse{Error: "url query parameter is required"})
 			return
 		}
 
@@ -39,7 +39,7 @@ func NewRepoInfoHandler(log *slog.Logger, procClient *processor.Client) http.Han
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(dto.ErrorResponse{Error: err.Error()})
+			_ = json.NewEncoder(w).Encode(dto.ErrorResponse{Error: err.Error()})
 			return
 		}
 

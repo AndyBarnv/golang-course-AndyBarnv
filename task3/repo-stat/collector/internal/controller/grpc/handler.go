@@ -22,9 +22,9 @@ func (s *Server) GetRepositoryInfo(ctx context.Context, req *collectorpblib.Repo
 	repo, err := s.uc.GetRepo(ctx, req.Owner, req.Repo)
 	if err != nil {
 		if err.Error() == "repository not found" {
-			return nil, status.Errorf(codes.NotFound, err.Error())
+			return nil, status.Errorf(codes.NotFound, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "%s", err.Error())
 	}
 
 	return &collectorpblib.RepositoryResponse{

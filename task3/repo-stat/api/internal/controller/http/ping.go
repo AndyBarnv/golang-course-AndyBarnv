@@ -21,7 +21,7 @@ import (
 func NewPingHandler(log *slog.Logger, subClient *subscriber.Client, procClient *processor.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var wg sync.WaitGroup
-		var procStatus, subStatus string = "up", "up"
+		procStatus, subStatus := "up", "up"
 
 		wg.Add(2)
 
@@ -50,7 +50,7 @@ func NewPingHandler(log *slog.Logger, subClient *subscriber.Client, procClient *
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(dto.PingResponse{
+		_ = json.NewEncoder(w).Encode(dto.PingResponse{
 			Status: statusStr,
 			Services: []dto.PingService{
 				{Name: "processor", Status: procStatus},
