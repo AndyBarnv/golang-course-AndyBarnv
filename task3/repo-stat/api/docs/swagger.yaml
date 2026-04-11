@@ -1,0 +1,98 @@
+basePath: /
+definitions:
+  dto.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  dto.PingResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/dto.PingService'
+        type: array
+      status:
+        type: string
+    type: object
+  dto.PingService:
+    properties:
+      name:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.RepositoryInfoResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      forks:
+        type: integer
+      full_name:
+        type: string
+      stars:
+        type: integer
+    type: object
+host: localhost:28080
+info:
+  contact: {}
+  description: A microservice API to fetch GitHub repository info.
+  title: GitHub Repository API
+  version: "1.0"
+paths:
+  /api/ping:
+    get:
+      consumes:
+      - application/json
+      description: Pings Processor and Subscriber services
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PingResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/dto.PingResponse'
+      summary: Check services health
+      tags:
+      - health
+  /api/repositories/info:
+    get:
+      consumes:
+      - application/json
+      description: Returns basic information about a GitHub repository by URL
+      parameters:
+      - description: GitHub repository URL
+        in: query
+        name: url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RepositoryInfoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get repository info
+      tags:
+      - repository
+schemes:
+- http
+swagger: "2.0"

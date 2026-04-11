@@ -1,10 +1,3 @@
-// @title           GitHub Repository API
-// @version         1.0
-// @description     A microservice API to fetch GitHub repository info.
-// @host            localhost:28080
-// @BasePath        /
-// @schemes         http
-
 package main
 
 import (
@@ -13,40 +6,43 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"repo-stat/api/config"
-	_ "repo-stat/api/docs"
-	"repo-stat/api/internal/controller/http"
-	"repo-stat/platform/httpserver"
+	"repo-stat/collector/config"
+	"repo-stat/collector/internal/adapter/github"
+	grpccontroller "repo-stat/collector/internal/controller/grpc"
+	"repo-stat/collector/internal/usecase"
+	"repo-stat/platform/grpcserver"
 	"repo-stat/platform/logger"
+	collectorpb "repo-stat/proto/collector"
 )
 
 func run(ctx context.Context) error {
-	// config
 	var configPath string
 	flag.StringVar(&configPath, "config", "config.yaml", "server configuration file")
 	flag.Parse()
 
 	cfg := config.MustLoad(configPath)
 
-	// logger
-
 	log := logger.MustMakeLogger(cfg.Logger.LogLevel)
-
-	log.Info("starting server...")
+	log.Info("starting subscriber server...")
 	log.Debug("debug messages are enabled")
 
-	// handler
-	handler, err := http.NewHandler(ctx, log, cfg)
+	githubAdapter := github.NewClient()
+
+	repoUseCase := usecase.NewService(githubAdapter)
+
+	collectorServer := grpccontroller.NewServer(repoUseCase)
+
+	srv, err := grpcserver.New(cfg.GRPC.Address)
 	if err != nil {
-		log.Error("Error creating handler", "error", err)
-		return err
+		return fmt.Errorf("create grpc server: %w", err)
 	}
 
-	// server
-	srv := httpserver.New(cfg.HTTP, handler)
+	collectorpb.RegisterCollectorServiceServer(srv.GRPC(), collectorServer)
+
 	if err := srv.Run(ctx); err != nil {
-		return fmt.Errorf("run http server: %w", err)
+		return fmt.Errorf("run grpc server: %w", err)
 	}
+
 	return nil
 }
 

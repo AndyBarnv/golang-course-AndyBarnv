@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 	"repo-stat/api/config"
+	"repo-stat/api/internal/adapter/processor"
 	"repo-stat/api/internal/adapter/subscriber"
-	"repo-stat/api/internal/usecase"
 )
 
 func NewHandler(ctx context.Context, log *slog.Logger, cfg config.Config) (http.Handler, error) {
@@ -16,10 +16,15 @@ func NewHandler(ctx context.Context, log *slog.Logger, cfg config.Config) (http.
 		return nil, err
 	}
 
-	pingUseCase := usecase.NewPing(subscriberClient)
+	processorClient, err := processor.NewClient(cfg.Services.Processor)
+	if err != nil {
+		log.Error("cannot init processor adapter", "error", err)
+		return nil, err
+	}
 
 	mux := http.NewServeMux()
-	AddRoutes(mux, log, pingUseCase)
+
+	AddRoutes(mux, log, subscriberClient, processorClient)
 
 	var handler http.Handler = mux
 	return handler, nil
